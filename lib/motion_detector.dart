@@ -14,31 +14,48 @@ class MotionDetector {
   final _streamSubscriptions = <StreamSubscription<dynamic>>[];
   final Duration _sensorInterval = SensorInterval.uiInterval;
   late AccelerometerHandler _accelerometerXHandler;
+  late GyroscopeHandler _gyroscopeZHandler;
 
   final _userAccelerometerStreamController = StreamController<void>();
+  final _gyroscopeStreamController = StreamController<void>();
 
   Stream<void> get userAccelerometerStream => _userAccelerometerStreamController.stream;
+  Stream<void> get gyroscopeStream => _gyroscopeStreamController.stream;
 
   MotionDetector() {
     _accelerometerXHandler = AccelerometerHandler(
       name: 'x',
       onDetect: () => _userAccelerometerStreamController.add(null),
     );
+    _gyroscopeZHandler = GyroscopeHandler(
+      name: 'z',
+      onDetect: () => _gyroscopeStreamController.add(null),
+    );
   }
 
   void start() {
-    _streamSubscriptions.add(
+    _streamSubscriptions.addAll([
       userAccelerometerEventStream(samplingPeriod: _sensorInterval).listen(
         (UserAccelerometerEvent event) {
           final now = DateTime.now();
-          _accelerometerXHandler.set(event.x, now);
+          //_accelerometerXHandler.set(event.x, now);
         },
         onError: (e) {
           print(e);
         },
         cancelOnError: true,
       ),
-    );
+      gyroscopeEventStream(samplingPeriod: _sensorInterval).listen(
+        (GyroscopeEvent event) {
+          final now = DateTime.now();
+          _gyroscopeZHandler.set(event.z, now);
+        },
+        onError: (e) {
+          print(e);
+        },
+        cancelOnError: true,
+      ),
+    ]);
   }
 
   void stop() {
@@ -64,6 +81,7 @@ class AccelerometerHandler {
   /// ローパスフィルター
   final _lowPassFilter = LowPassFilter();
 
+  /// しきい値
   final double threshold = 0.2;
 
   void set(double value, DateTime time) {
@@ -117,11 +135,65 @@ class AccelerometerHandler {
   }
 }
 
+class GyroscopeHandler {
+  final String name;
+  final void Function() onDetect;
+
+  GyroscopeHandler({required this.name, required this.onDetect});
+
+  double _prevValue = 0;
+  double _angle = 0;
+  DateTime? _prevTime;
+
+  /// キャリブレーター
+  final _calibrator = Calibrator();
+
+  /// しきい値
+  final double threshold = 90;
+
+  void set(double value, DateTime time) {
+    final pTime = _prevTime;
+    _prevTime = time;
+    if (pTime == null) {
+      return;
+    }
+    final timeSpan = time.difference(pTime).inMilliseconds / 1000;
+
+    // キャリブレーション
+    final calibratedValue = _calibrator.calibrate(value);
+
+    // ラジアンから度に変換
+    final degrees = radian2Degree(calibratedValue);
+
+    // 角度計算(角速度を台形積分)
+    _angle += ((degrees + _prevValue) * timeSpan) / 2;
+    _prevValue = degrees;
+
+    print(
+        '$name: radian=${value.toStringAsFixed(5)}, caliValue=${calibratedValue.toStringAsFixed(5)}, degrees=${degrees.toStringAsFixed(5)}, angle=${_angle.toStringAsFixed(5)}, ${value < 0 ? 'MINUS' : ''}');
+
+    if (_angle.abs() > threshold) {
+      clear();
+      onDetect();
+    }
+  }
+
+  double radian2Degree(double radian) {
+    return radian * 180 / 3.14159;
+  }
+
+  void clear() {
+    _prevValue = 0;
+    _angle = 0;
+  }
+}
+
 /// キャリブレーター
 class Calibrator {
   final List<double> _values = [];
   final _numberOfSampling = 30;
   double _offset = 0.0;
+  bool _isCalibrated = false;
 
   double get offset => _offset;
 
@@ -130,14 +202,15 @@ class Calibrator {
       _values.add(value);
       return value;
     } else {
-      if (_offset == 0) {
+      if (!_isCalibrated) {
         _offset = _median(_values);
-        print('@@@@ _offset = $_offset');
+        _isCalibrated = true;
       }
       return value - _offset;
     }
   }
 
+  /// 中央値を算出する
   double _median(List<double> list) {
     list.sort();
     final middle = list.length ~/ 2;

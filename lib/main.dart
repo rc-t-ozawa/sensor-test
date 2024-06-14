@@ -37,23 +37,32 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   final _motionDetector = MotionDetector();
   final _streamSubscriptions = <StreamSubscription<dynamic>>[];
-  bool _isDetected = false;
+  bool _isUserAccelerometerDetected = false;
+  bool _isGyroscopeDetected = false;
 
   @override
   void initState() {
     super.initState();
     _motionDetector.start();
 
-    _streamSubscriptions.add(
+    _streamSubscriptions.addAll([
       _motionDetector.userAccelerometerStream.listen(
         (event) {
-          setState(() => _isDetected = true);
+          setState(() => _isUserAccelerometerDetected = true);
           Future.delayed(const Duration(milliseconds: 500), () {
-            setState(() => _isDetected = false);
+            setState(() => _isUserAccelerometerDetected = false);
           });
         },
       ),
-    );
+      _motionDetector.gyroscopeStream.listen(
+        (event) {
+          setState(() => _isGyroscopeDetected = true);
+          Future.delayed(const Duration(milliseconds: 500), () {
+            setState(() => _isGyroscopeDetected = false);
+          });
+        },
+      ),
+    ]);
   }
 
   @override
@@ -76,7 +85,15 @@ class _MyHomePageState extends State<MyHomePage> {
         elevation: 4,
       ),
       body: AnimatedContainer(
-        color: _isDetected ? Colors.red : Colors.transparent,
+        color: () {
+          if (_isUserAccelerometerDetected) {
+            return Colors.red;
+          } else if (_isGyroscopeDetected) {
+            return Colors.blue;
+          } else {
+            return Colors.transparent;
+          }
+        }(),
         duration: const Duration(milliseconds: 500),
       ),
     );
