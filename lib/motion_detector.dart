@@ -13,8 +13,8 @@ class Accelerometer {
 class MotionDetector {
   final _streamSubscriptions = <StreamSubscription<dynamic>>[];
   final Duration _sensorInterval = SensorInterval.uiInterval;
-  late AccelerometerHandler _accelerometerXHandler;
-  late GyroscopeHandler _gyroscopeZHandler;
+  late AccelerometerAnalyser _accelerometerXAnalyser;
+  late GyroscopeAnalyser _gyroscopeZAnalyser;
 
   final _userAccelerometerStreamController = StreamController<void>();
   final _gyroscopeStreamController = StreamController<void>();
@@ -23,11 +23,11 @@ class MotionDetector {
   Stream<void> get gyroscopeStream => _gyroscopeStreamController.stream;
 
   MotionDetector() {
-    _accelerometerXHandler = AccelerometerHandler(
+    _accelerometerXAnalyser = AccelerometerAnalyser(
       name: 'x',
       onDetect: () => _userAccelerometerStreamController.add(null),
     );
-    _gyroscopeZHandler = GyroscopeHandler(
+    _gyroscopeZAnalyser = GyroscopeAnalyser(
       name: 'z',
       onDetect: () => _gyroscopeStreamController.add(null),
     );
@@ -38,7 +38,7 @@ class MotionDetector {
       userAccelerometerEventStream(samplingPeriod: _sensorInterval).listen(
         (UserAccelerometerEvent event) {
           final now = DateTime.now();
-          //_accelerometerXHandler.set(event.x, now);
+          _accelerometerXAnalyser.set(value: event.x, time: now);
         },
         onError: (e) {
           print(e);
@@ -48,7 +48,7 @@ class MotionDetector {
       gyroscopeEventStream(samplingPeriod: _sensorInterval).listen(
         (GyroscopeEvent event) {
           final now = DateTime.now();
-          _gyroscopeZHandler.set(event.z, now);
+          _gyroscopeZAnalyser.set(value: event.z, time: now);
         },
         onError: (e) {
           print(e);
@@ -63,11 +63,11 @@ class MotionDetector {
   }
 }
 
-class AccelerometerHandler {
+class AccelerometerAnalyser {
   final String name;
   final void Function() onDetect;
 
-  AccelerometerHandler({required this.name, required this.onDetect});
+  AccelerometerAnalyser({required this.name, required this.onDetect});
 
   double _prevValue = 0;
   double _speed = 0;
@@ -82,9 +82,9 @@ class AccelerometerHandler {
   final _lowPassFilter = LowPassFilter();
 
   /// しきい値
-  final double threshold = 0.2;
+  final double _threshold = 0.2;
 
-  void set(double value, DateTime time) {
+  void set({required double value, required DateTime time}) {
     final pTime = _prevTime;
     _prevTime = time;
     if (pTime == null) {
@@ -112,7 +112,7 @@ class AccelerometerHandler {
     print(
         '$name: value=${value.toStringAsFixed(5)}, caliValue=${calibratedValue.toStringAsFixed(5)}, roundedValue=${roundedValue.toStringAsFixed(5)}, filValue=${filteredValue.toStringAsFixed(5)}, speed=${_speed.toStringAsFixed(5)}, distance=${_distance.toStringAsFixed(5)}');
 
-    if (_distance.abs() > threshold) {
+    if (_distance.abs() > _threshold) {
       //print('$name: distance=${distance.toStringAsFixed(5)}');
       clear();
       onDetect();
@@ -135,11 +135,11 @@ class AccelerometerHandler {
   }
 }
 
-class GyroscopeHandler {
+class GyroscopeAnalyser {
   final String name;
   final void Function() onDetect;
 
-  GyroscopeHandler({required this.name, required this.onDetect});
+  GyroscopeAnalyser({required this.name, required this.onDetect});
 
   double _prevValue = 0;
   double _angle = 0;
@@ -149,9 +149,9 @@ class GyroscopeHandler {
   final _calibrator = Calibrator();
 
   /// しきい値
-  final double threshold = 90;
+  final double _threshold = 90;
 
-  void set(double value, DateTime time) {
+  void set({required double value, required DateTime time}) {
     final pTime = _prevTime;
     _prevTime = time;
     if (pTime == null) {
@@ -172,7 +172,7 @@ class GyroscopeHandler {
     print(
         '$name: radian=${value.toStringAsFixed(5)}, caliValue=${calibratedValue.toStringAsFixed(5)}, degrees=${degrees.toStringAsFixed(5)}, angle=${_angle.toStringAsFixed(5)}, ${value < 0 ? 'MINUS' : ''}');
 
-    if (_angle.abs() > threshold) {
+    if (_angle.abs() > _threshold) {
       clear();
       onDetect();
     }
