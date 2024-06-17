@@ -37,32 +37,26 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   final _motionDetector = MotionDetector();
   final _streamSubscriptions = <StreamSubscription<dynamic>>[];
-  bool _isUserAccelerometerDetected = false;
-  bool _isGyroscopeDetected = false;
+  SensorType _sensorType = SensorType.userAccelerometer;
+  bool _isDetected = false;
 
   @override
   void initState() {
     super.initState();
     _motionDetector.start();
 
-    _streamSubscriptions.addAll([
-      _motionDetector.userAccelerometerStream.listen(
-        (event) {
-          setState(() => _isUserAccelerometerDetected = true);
-          Future.delayed(const Duration(milliseconds: 500), () {
-            setState(() => _isUserAccelerometerDetected = false);
-          });
-        },
-      ),
-      _motionDetector.gyroscopeStream.listen(
-        (event) {
-          setState(() => _isGyroscopeDetected = true);
-          Future.delayed(const Duration(milliseconds: 500), () {
-            setState(() => _isGyroscopeDetected = false);
-          });
-        },
-      ),
-    ]);
+    _streamSubscriptions.add(_motionDetector.stream.listen(
+      (event) {
+        _sensorType = event;
+        setState(() => _isDetected = true);
+        Future.delayed(const Duration(milliseconds: 500), () {
+          setState(() => _isDetected = false);
+        });
+      },
+      onError: (e) {
+        print(e);
+      },
+    ));
   }
 
   @override
@@ -86,10 +80,15 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       body: AnimatedContainer(
         color: () {
-          if (_isUserAccelerometerDetected) {
-            return Colors.red;
-          } else if (_isGyroscopeDetected) {
-            return Colors.blue;
+          if (_isDetected) {
+            switch (_sensorType) {
+              case SensorType.userAccelerometer:
+                return Colors.red;
+              case SensorType.gyroscope:
+                return Colors.blue;
+              default:
+                return Colors.transparent;
+            }
           } else {
             return Colors.transparent;
           }

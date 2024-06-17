@@ -10,26 +10,32 @@ class Accelerometer {
   Accelerometer({required this.x, required this.y, required this.z, required this.time});
 }
 
+/// センサー種別
+enum SensorType {
+  /// 加速度（重力を含まない）
+  userAccelerometer,
+
+  /// ジャイロ
+  gyroscope,
+}
+
 class MotionDetector {
   final _streamSubscriptions = <StreamSubscription<dynamic>>[];
   final Duration _sensorInterval = SensorInterval.uiInterval;
   late AccelerometerAnalyser _accelerometerXAnalyser;
   late GyroscopeAnalyser _gyroscopeZAnalyser;
 
-  final _userAccelerometerStreamController = StreamController<void>();
-  final _gyroscopeStreamController = StreamController<void>();
-
-  Stream<void> get userAccelerometerStream => _userAccelerometerStreamController.stream;
-  Stream<void> get gyroscopeStream => _gyroscopeStreamController.stream;
+  final _streamController = StreamController<SensorType>();
+  Stream<SensorType> get stream => _streamController.stream;
 
   MotionDetector() {
     _accelerometerXAnalyser = AccelerometerAnalyser(
       name: 'x',
-      onDetect: () => _userAccelerometerStreamController.add(null),
+      onDetect: () => _streamController.add(SensorType.userAccelerometer),
     );
     _gyroscopeZAnalyser = GyroscopeAnalyser(
       name: 'z',
-      onDetect: () => _gyroscopeStreamController.add(null),
+      onDetect: () => _streamController.add(SensorType.gyroscope),
     );
   }
 
@@ -38,7 +44,7 @@ class MotionDetector {
       userAccelerometerEventStream(samplingPeriod: _sensorInterval).listen(
         (UserAccelerometerEvent event) {
           final now = DateTime.now();
-          _accelerometerXAnalyser.set(value: event.x, time: now);
+          //_accelerometerXAnalyser.set(value: event.x, time: now);
         },
         onError: (e) {
           print(e);
@@ -95,11 +101,11 @@ class AccelerometerAnalyser {
     // キャリブレーション
     final calibratedValue = _calibrator.calibrate(value);
 
-    final roundedValue = round(calibratedValue, _calibrator.offset);
+    //final roundedValue = round(calibratedValue, _calibrator.offset);
 
     // ハイパスフィルター (= センサ値 - ローパスフィルターの値)
-    final filteredValue = roundedValue - _lowPassFilter.filter(roundedValue);
-    //final filteredValue = calibratedValue - _lowPassFilter.filter(calibratedValue);
+    //final filteredValue = roundedValue - _lowPassFilter.filter(roundedValue);
+    final filteredValue = calibratedValue - _lowPassFilter.filter(calibratedValue);
 
     // 速度計算(加速度を台形積分する)
     _speed = ((filteredValue + _prevValue) * timeSpan) / 2 + _speed;
@@ -109,8 +115,10 @@ class AccelerometerAnalyser {
     _distance = ((_speed + _prevSpeed) * timeSpan) / 2 + _distance;
     _prevSpeed = _speed;
 
+    // print(
+    //     '$name: value=${value.toStringAsFixed(5)}, caliValue=${calibratedValue.toStringAsFixed(5)}, roundedValue=${roundedValue.toStringAsFixed(5)}, filValue=${filteredValue.toStringAsFixed(5)}, speed=${_speed.toStringAsFixed(5)}, distance=${_distance.toStringAsFixed(5)}');
     print(
-        '$name: value=${value.toStringAsFixed(5)}, caliValue=${calibratedValue.toStringAsFixed(5)}, roundedValue=${roundedValue.toStringAsFixed(5)}, filValue=${filteredValue.toStringAsFixed(5)}, speed=${_speed.toStringAsFixed(5)}, distance=${_distance.toStringAsFixed(5)}');
+        '$name: value=${value.toStringAsFixed(5)}, caliValue=${calibratedValue.toStringAsFixed(5)}, filValue=${filteredValue.toStringAsFixed(5)}, speed=${_speed.toStringAsFixed(5)}, distance=${_distance.toStringAsFixed(5)}');
 
     if (_distance.abs() > _threshold) {
       //print('$name: distance=${distance.toStringAsFixed(5)}');
