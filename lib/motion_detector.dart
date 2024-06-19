@@ -45,7 +45,7 @@ class MotionDetector {
     _streamSubscriptions.addAll([
       userAccelerometerEventStream(samplingPeriod: _sensorInterval).listen(
         (UserAccelerometerEvent event) {
-          //_accelerometerXAnalyser.set(value: event.x, time: DateTime.now());
+          //_accelerometerXAnalyser.analyse(value: event.x, time: DateTime.now());
         },
         onError: (e) {
           print(e);
@@ -54,7 +54,7 @@ class MotionDetector {
       ),
       gyroscopeEventStream(samplingPeriod: _sensorInterval).listen(
         (GyroscopeEvent event) {
-          _gyroscopeZAnalyser.set(value: event.z, time: DateTime.now());
+          _gyroscopeZAnalyser.analyse(value: event.z, time: DateTime.now());
         },
         onError: (e) {
           print(e);
@@ -88,7 +88,7 @@ class AccelerometerAnalyser {
   /// ローパスフィルター
   final _lowPassFilter = LowPassFilter();
 
-  void set({required double value, required DateTime time}) {
+  void analyse({required double value, required DateTime time}) {
     final pTime = _prevTime;
     _prevTime = time;
     if (pTime == null) {
@@ -151,17 +151,22 @@ class GyroscopeAnalyser {
   double _prevValue = 0;
   double _angle = 0;
   DateTime? _prevTime;
+  bool isIgnoring = false;
 
   /// キャリブレーター
   final _calibrator = Calibrator();
 
-  void set({required double value, required DateTime time}) {
+  void analyse({required double value, required DateTime time}) {
     final pTime = _prevTime;
     _prevTime = time;
     if (pTime == null) {
       return;
     }
     final timeSpan = time.difference(pTime).inMilliseconds / 1000;
+
+    if (isIgnoring) {
+      return;
+    }
 
     // キャリブレーション
     final calibratedValue = _calibrator.calibrate(value);
@@ -179,6 +184,11 @@ class GyroscopeAnalyser {
     if (_angle.abs() > thresholdValue) {
       clear();
       onDetect();
+
+      isIgnoring = true;
+      Future.delayed(const Duration(seconds: 1), () {
+        isIgnoring = false;
+      });
     }
   }
 
