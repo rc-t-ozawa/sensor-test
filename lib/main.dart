@@ -36,6 +36,7 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   final _motionDetector = MotionDetector();
+  final _streamSubscriptions = <StreamSubscription<dynamic>>[];
   String _accX = '';
   String _accY = '';
   String _accZ = '';
@@ -43,18 +44,26 @@ class _MyHomePageState extends State<MyHomePage> {
   String _gyroY = '';
   String _gyroZ = '';
 
-  //final textStyle = const TextStyle(color: Colors.white, fontSize: 24);
-
   @override
   void initState() {
     super.initState();
     _motionDetector.start();
+
+    _streamSubscriptions.add(
+      _motionDetector.stream.listen(
+        (info) {
+          setState(() => _setOutputValues(info));
+        },
+        onError: (e) => print(e),
+      ),
+    );
   }
 
   @override
   void dispose() {
     super.dispose();
     _motionDetector.stop();
+    _streamSubscriptions.clear();
   }
 
   @override
@@ -99,50 +108,38 @@ class _MyHomePageState extends State<MyHomePage> {
               style: textStyle,
             ),
           ]),
-          StreamBuilder(
-            stream: _motionDetector.stream,
-            builder: (context, snapShot) {
-              final info = snapShot.data;
-              if (info == null) {
-                return const SizedBox.shrink();
-              }
-
-              setOutputValues(info);
-
-              return Column(children: [
-                Text(
-                  _accX,
-                  style: textStyle,
-                ),
-                Text(
-                  _accY,
-                  style: textStyle,
-                ),
-                Text(
-                  _accZ,
-                  style: textStyle,
-                ),
-                Text(
-                  _gyroX,
-                  style: textStyle,
-                ),
-                Text(
-                  _gyroY,
-                  style: textStyle,
-                ),
-                Text(
-                  _gyroZ,
-                  style: textStyle,
-                ),
-              ]);
-            },
-          ),
+          Column(children: [
+            Text(
+              _accX,
+              style: textStyle,
+            ),
+            Text(
+              _accY,
+              style: textStyle,
+            ),
+            Text(
+              _accZ,
+              style: textStyle,
+            ),
+            Text(
+              _gyroX,
+              style: textStyle,
+            ),
+            Text(
+              _gyroY,
+              style: textStyle,
+            ),
+            Text(
+              _gyroZ,
+              style: textStyle,
+            ),
+          ]),
         ],
       ),
     );
   }
 
-  void setOutputValues(MotionInfo info) {
+  void _setOutputValues(MotionInfo info) {
     final value = info.outputValue.toStringAsFixed(5);
     switch (info.sensorType) {
       case SensorType.userAccelerometerX:
@@ -164,11 +161,5 @@ class _MyHomePageState extends State<MyHomePage> {
         _gyroZ = value;
         break;
     }
-  }
-}
-
-extension ExtMotionInfo on MotionInfo {
-  String getOutputValue(SensorType type) {
-    return sensorType == type ? outputValue.toStringAsFixed(5) : '';
   }
 }

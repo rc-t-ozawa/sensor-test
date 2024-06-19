@@ -188,8 +188,8 @@ class GyroscopeAnalyser {
     _angle += ((degrees + _prevValue) * timeSpan) / 2;
     _prevValue = degrees;
 
-    // print(
-    //     '$type: radian=${value.toStringAsFixed(5)}, caliValue=${calibratedValue.toStringAsFixed(5)}, degrees=${degrees.toStringAsFixed(5)}, angle=${_angle.toStringAsFixed(5)}, ${value < 0 ? 'MINUS' : ''}');
+    print(
+        '$type: radian=${value.toStringAsFixed(5)}, caliValue=${calibratedValue.toStringAsFixed(5)}, degrees=${degrees.toStringAsFixed(5)}, angle=${_angle.toStringAsFixed(5)}, ${value < 0 ? 'MINUS' : ''}');
 
     final isDetected = _angle.abs() > thresholdValue;
     onDetect(MotionInfo(sensorType: type, outputValue: _angle, isDetected: isDetected));
@@ -197,7 +197,7 @@ class GyroscopeAnalyser {
       clear();
 
       isIgnoring = true;
-      Future.delayed(const Duration(seconds: 1), () {
+      Future.delayed(const Duration(milliseconds: 500), () {
         isIgnoring = false;
       });
     }
