@@ -31,10 +31,12 @@ class MotionDetector {
   MotionDetector() {
     _accelerometerXAnalyser = AccelerometerAnalyser(
       name: 'x',
+      thresholdValue: 0.2,
       onDetect: () => _streamController.add(SensorType.userAccelerometer),
     );
     _gyroscopeZAnalyser = GyroscopeAnalyser(
       name: 'z',
+      thresholdValue: 90,
       onDetect: () => _streamController.add(SensorType.gyroscope),
     );
   }
@@ -43,8 +45,7 @@ class MotionDetector {
     _streamSubscriptions.addAll([
       userAccelerometerEventStream(samplingPeriod: _sensorInterval).listen(
         (UserAccelerometerEvent event) {
-          final now = DateTime.now();
-          //_accelerometerXAnalyser.set(value: event.x, time: now);
+          //_accelerometerXAnalyser.set(value: event.x, time: DateTime.now());
         },
         onError: (e) {
           print(e);
@@ -53,8 +54,7 @@ class MotionDetector {
       ),
       gyroscopeEventStream(samplingPeriod: _sensorInterval).listen(
         (GyroscopeEvent event) {
-          final now = DateTime.now();
-          _gyroscopeZAnalyser.set(value: event.z, time: now);
+          _gyroscopeZAnalyser.set(value: event.z, time: DateTime.now());
         },
         onError: (e) {
           print(e);
@@ -71,9 +71,10 @@ class MotionDetector {
 
 class AccelerometerAnalyser {
   final String name;
+  final double thresholdValue;
   final void Function() onDetect;
 
-  AccelerometerAnalyser({required this.name, required this.onDetect});
+  AccelerometerAnalyser({required this.name, required this.thresholdValue, required this.onDetect});
 
   double _prevValue = 0;
   double _speed = 0;
@@ -86,9 +87,6 @@ class AccelerometerAnalyser {
 
   /// ローパスフィルター
   final _lowPassFilter = LowPassFilter();
-
-  /// しきい値
-  final double _threshold = 0.2;
 
   void set({required double value, required DateTime time}) {
     final pTime = _prevTime;
@@ -120,7 +118,7 @@ class AccelerometerAnalyser {
     print(
         '$name: value=${value.toStringAsFixed(5)}, caliValue=${calibratedValue.toStringAsFixed(5)}, filValue=${filteredValue.toStringAsFixed(5)}, speed=${_speed.toStringAsFixed(5)}, distance=${_distance.toStringAsFixed(5)}');
 
-    if (_distance.abs() > _threshold) {
+    if (_distance.abs() > thresholdValue) {
       //print('$name: distance=${distance.toStringAsFixed(5)}');
       clear();
       onDetect();
@@ -145,9 +143,10 @@ class AccelerometerAnalyser {
 
 class GyroscopeAnalyser {
   final String name;
+  final double thresholdValue;
   final void Function() onDetect;
 
-  GyroscopeAnalyser({required this.name, required this.onDetect});
+  GyroscopeAnalyser({required this.name, required this.thresholdValue, required this.onDetect});
 
   double _prevValue = 0;
   double _angle = 0;
@@ -155,9 +154,6 @@ class GyroscopeAnalyser {
 
   /// キャリブレーター
   final _calibrator = Calibrator();
-
-  /// しきい値
-  final double _threshold = 90;
 
   void set({required double value, required DateTime time}) {
     final pTime = _prevTime;
@@ -180,7 +176,7 @@ class GyroscopeAnalyser {
     print(
         '$name: radian=${value.toStringAsFixed(5)}, caliValue=${calibratedValue.toStringAsFixed(5)}, degrees=${degrees.toStringAsFixed(5)}, angle=${_angle.toStringAsFixed(5)}, ${value < 0 ? 'MINUS' : ''}');
 
-    if (_angle.abs() > _threshold) {
+    if (_angle.abs() > thresholdValue) {
       clear();
       onDetect();
     }
@@ -213,6 +209,7 @@ class Calibrator {
       if (!_isCalibrated) {
         _offset = _median(_values);
         _isCalibrated = true;
+        print('@@@@ _offset=$_offset');
       }
       return value - _offset;
     }
