@@ -37,7 +37,7 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   final _motionDetector = MotionDetector();
   final _streamSubscriptions = <StreamSubscription<dynamic>>[];
-  SensorType _sensorType = SensorType.userAccelerometer;
+  SensorType _sensorType = SensorType.userAccelerometerX;
   bool _isDetected = false;
 
   @override
@@ -82,9 +82,9 @@ class _MyHomePageState extends State<MyHomePage> {
         color: () {
           if (_isDetected) {
             switch (_sensorType) {
-              case SensorType.userAccelerometer:
+              case SensorType.userAccelerometerX:
                 return Colors.red;
-              case SensorType.gyroscope:
+              case SensorType.gyroscopeX:
                 return Colors.blue;
               default:
                 return Colors.transparent;

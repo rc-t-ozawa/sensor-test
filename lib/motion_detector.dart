@@ -12,11 +12,23 @@ class Accelerometer {
 
 /// センサー種別
 enum SensorType {
-  /// 加速度（重力を含まない）
-  userAccelerometer,
+  /// 加速度X（重力を含まない）
+  userAccelerometerX,
 
-  /// ジャイロ
-  gyroscope,
+  /// 加速度Y（重力を含まない）
+  userAccelerometerY,
+
+  /// 加速度Z（重力を含まない）
+  userAccelerometerZ,
+
+  /// ジャイロX
+  gyroscopeX,
+
+  /// ジャイロY
+  gyroscopeY,
+
+  /// ジャイロX
+  gyroscopeZ,
 }
 
 class MotionDetector {
@@ -30,14 +42,14 @@ class MotionDetector {
 
   MotionDetector() {
     _accelerometerXAnalyser = AccelerometerAnalyser(
-      name: 'x',
+      type: SensorType.userAccelerometerX,
       thresholdValue: 0.2,
-      onDetect: () => _streamController.add(SensorType.userAccelerometer),
+      onDetect: () => _streamController.add(SensorType.userAccelerometerX),
     );
     _gyroscopeZAnalyser = GyroscopeAnalyser(
-      name: 'z',
+      type: SensorType.gyroscopeZ,
       thresholdValue: 90,
-      onDetect: () => _streamController.add(SensorType.gyroscope),
+      onDetect: () => _streamController.add(SensorType.gyroscopeZ),
     );
   }
 
@@ -70,11 +82,11 @@ class MotionDetector {
 }
 
 class AccelerometerAnalyser {
-  final String name;
+  final SensorType type;
   final double thresholdValue;
   final void Function() onDetect;
 
-  AccelerometerAnalyser({required this.name, required this.thresholdValue, required this.onDetect});
+  AccelerometerAnalyser({required this.type, required this.thresholdValue, required this.onDetect});
 
   double _prevValue = 0;
   double _speed = 0;
@@ -116,7 +128,7 @@ class AccelerometerAnalyser {
     // print(
     //     '$name: value=${value.toStringAsFixed(5)}, caliValue=${calibratedValue.toStringAsFixed(5)}, roundedValue=${roundedValue.toStringAsFixed(5)}, filValue=${filteredValue.toStringAsFixed(5)}, speed=${_speed.toStringAsFixed(5)}, distance=${_distance.toStringAsFixed(5)}');
     print(
-        '$name: value=${value.toStringAsFixed(5)}, caliValue=${calibratedValue.toStringAsFixed(5)}, filValue=${filteredValue.toStringAsFixed(5)}, speed=${_speed.toStringAsFixed(5)}, distance=${_distance.toStringAsFixed(5)}');
+        '$type: value=${value.toStringAsFixed(5)}, caliValue=${calibratedValue.toStringAsFixed(5)}, filValue=${filteredValue.toStringAsFixed(5)}, speed=${_speed.toStringAsFixed(5)}, distance=${_distance.toStringAsFixed(5)}');
 
     if (_distance.abs() > thresholdValue) {
       //print('$name: distance=${distance.toStringAsFixed(5)}');
@@ -142,11 +154,11 @@ class AccelerometerAnalyser {
 }
 
 class GyroscopeAnalyser {
-  final String name;
+  final SensorType type;
   final double thresholdValue;
   final void Function() onDetect;
 
-  GyroscopeAnalyser({required this.name, required this.thresholdValue, required this.onDetect});
+  GyroscopeAnalyser({required this.type, required this.thresholdValue, required this.onDetect});
 
   double _prevValue = 0;
   double _angle = 0;
@@ -179,7 +191,7 @@ class GyroscopeAnalyser {
     _prevValue = degrees;
 
     print(
-        '$name: radian=${value.toStringAsFixed(5)}, caliValue=${calibratedValue.toStringAsFixed(5)}, degrees=${degrees.toStringAsFixed(5)}, angle=${_angle.toStringAsFixed(5)}, ${value < 0 ? 'MINUS' : ''}');
+        '$type: radian=${value.toStringAsFixed(5)}, caliValue=${calibratedValue.toStringAsFixed(5)}, degrees=${degrees.toStringAsFixed(5)}, angle=${_angle.toStringAsFixed(5)}, ${value < 0 ? 'MINUS' : ''}');
 
     if (_angle.abs() > thresholdValue) {
       clear();
