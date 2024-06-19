@@ -36,38 +36,30 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   final _motionDetector = MotionDetector();
-  final _streamSubscriptions = <StreamSubscription<dynamic>>[];
-  SensorType _sensorType = SensorType.userAccelerometerX;
-  bool _isDetected = false;
+  String _accX = '';
+  String _accY = '';
+  String _accZ = '';
+  String _gyroX = '';
+  String _gyroY = '';
+  String _gyroZ = '';
+
+  //final textStyle = const TextStyle(color: Colors.white, fontSize: 24);
 
   @override
   void initState() {
     super.initState();
     _motionDetector.start();
-
-    _streamSubscriptions.add(_motionDetector.stream.listen(
-      (event) {
-        _sensorType = event;
-        setState(() => _isDetected = true);
-        Future.delayed(const Duration(milliseconds: 500), () {
-          setState(() => _isDetected = false);
-        });
-      },
-      onError: (e) {
-        print(e);
-      },
-    ));
   }
 
   @override
   void dispose() {
     super.dispose();
     _motionDetector.stop();
-    _streamSubscriptions.clear();
   }
 
   @override
   Widget build(BuildContext context) {
+    const textStyle = TextStyle(color: Colors.white, fontSize: 24);
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -78,23 +70,105 @@ class _MyHomePageState extends State<MyHomePage> {
         backgroundColor: Colors.black,
         elevation: 4,
       ),
-      body: AnimatedContainer(
-        color: () {
-          if (_isDetected) {
-            switch (_sensorType) {
-              case SensorType.userAccelerometerX:
-                return Colors.red;
-              case SensorType.gyroscopeX:
-                return Colors.blue;
-              default:
-                return Colors.transparent;
-            }
-          } else {
-            return Colors.transparent;
-          }
-        }(),
-        duration: const Duration(milliseconds: 500),
+      body: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          const Column(children: [
+            Text(
+              'Acc X',
+              style: textStyle,
+            ),
+            Text(
+              'Acc Y',
+              style: textStyle,
+            ),
+            Text(
+              'Acc Z',
+              style: textStyle,
+            ),
+            Text(
+              'gyro X',
+              style: textStyle,
+            ),
+            Text(
+              'gyro Y',
+              style: textStyle,
+            ),
+            Text(
+              'gyro Z',
+              style: textStyle,
+            ),
+          ]),
+          StreamBuilder(
+            stream: _motionDetector.stream,
+            builder: (context, snapShot) {
+              final info = snapShot.data;
+              if (info == null) {
+                return const SizedBox.shrink();
+              }
+
+              setOutputValues(info);
+
+              return Column(children: [
+                Text(
+                  _accX,
+                  style: textStyle,
+                ),
+                Text(
+                  _accY,
+                  style: textStyle,
+                ),
+                Text(
+                  _accZ,
+                  style: textStyle,
+                ),
+                Text(
+                  _gyroX,
+                  style: textStyle,
+                ),
+                Text(
+                  _gyroY,
+                  style: textStyle,
+                ),
+                Text(
+                  _gyroZ,
+                  style: textStyle,
+                ),
+              ]);
+            },
+          ),
+        ],
       ),
     );
+  }
+
+  void setOutputValues(MotionInfo info) {
+    final value = info.outputValue.toStringAsFixed(5);
+    switch (info.sensorType) {
+      case SensorType.userAccelerometerX:
+        _accX = value;
+        break;
+      case SensorType.userAccelerometerY:
+        _accY = value;
+        break;
+      case SensorType.userAccelerometerZ:
+        _accZ = value;
+        break;
+      case SensorType.gyroscopeX:
+        _gyroX = value;
+        break;
+      case SensorType.gyroscopeY:
+        _gyroY = value;
+        break;
+      case SensorType.gyroscopeZ:
+        _gyroZ = value;
+        break;
+    }
+  }
+}
+
+extension ExtMotionInfo on MotionInfo {
+  String getOutputValue(SensorType type) {
+    return sensorType == type ? outputValue.toStringAsFixed(5) : '';
   }
 }

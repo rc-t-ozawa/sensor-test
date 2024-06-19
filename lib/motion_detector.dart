@@ -1,15 +1,6 @@
 import 'dart:async';
 import 'package:sensors_plus/sensors_plus.dart';
 
-class Accelerometer {
-  final double x;
-  final double y;
-  final double z;
-  final DateTime time;
-
-  Accelerometer({required this.x, required this.y, required this.z, required this.time});
-}
-
 /// センサー種別
 enum SensorType {
   /// 加速度X（重力を含まない）
@@ -31,25 +22,34 @@ enum SensorType {
   gyroscopeZ,
 }
 
+/// センサー情報
+class MotionInfo {
+  final SensorType sensorType;
+  final double outputValue;
+  final bool isDetected;
+
+  MotionInfo({required this.sensorType, required this.outputValue, required this.isDetected});
+}
+
 class MotionDetector {
   final _streamSubscriptions = <StreamSubscription<dynamic>>[];
   final Duration _sensorInterval = SensorInterval.uiInterval;
   late AccelerometerAnalyser _accelerometerXAnalyser;
   late GyroscopeAnalyser _gyroscopeZAnalyser;
 
-  final _streamController = StreamController<SensorType>();
-  Stream<SensorType> get stream => _streamController.stream;
+  final _streamController = StreamController<MotionInfo>();
+  Stream<MotionInfo> get stream => _streamController.stream;
 
   MotionDetector() {
     _accelerometerXAnalyser = AccelerometerAnalyser(
       type: SensorType.userAccelerometerX,
       thresholdValue: 0.2,
-      onDetect: () => _streamController.add(SensorType.userAccelerometerX),
+      onDetect: (info) => _streamController.add(info),
     );
     _gyroscopeZAnalyser = GyroscopeAnalyser(
       type: SensorType.gyroscopeZ,
       thresholdValue: 90,
-      onDetect: () => _streamController.add(SensorType.gyroscopeZ),
+      onDetect: (info) => _streamController.add(info),
     );
   }
 
@@ -57,7 +57,7 @@ class MotionDetector {
     _streamSubscriptions.addAll([
       userAccelerometerEventStream(samplingPeriod: _sensorInterval).listen(
         (UserAccelerometerEvent event) {
-          //_accelerometerXAnalyser.analyse(value: event.x, time: DateTime.now());
+          _accelerometerXAnalyser.analyse(value: event.x, time: DateTime.now());
         },
         onError: (e) {
           print(e);
@@ -84,7 +84,7 @@ class MotionDetector {
 class AccelerometerAnalyser {
   final SensorType type;
   final double thresholdValue;
-  final void Function() onDetect;
+  final void Function(MotionInfo) onDetect;
 
   AccelerometerAnalyser({required this.type, required this.thresholdValue, required this.onDetect});
 
@@ -126,14 +126,12 @@ class AccelerometerAnalyser {
     _prevSpeed = _speed;
 
     // print(
-    //     '$name: value=${value.toStringAsFixed(5)}, caliValue=${calibratedValue.toStringAsFixed(5)}, roundedValue=${roundedValue.toStringAsFixed(5)}, filValue=${filteredValue.toStringAsFixed(5)}, speed=${_speed.toStringAsFixed(5)}, distance=${_distance.toStringAsFixed(5)}');
-    print(
-        '$type: value=${value.toStringAsFixed(5)}, caliValue=${calibratedValue.toStringAsFixed(5)}, filValue=${filteredValue.toStringAsFixed(5)}, speed=${_speed.toStringAsFixed(5)}, distance=${_distance.toStringAsFixed(5)}');
+    //     '$type: value=${value.toStringAsFixed(5)}, caliValue=${calibratedValue.toStringAsFixed(5)}, filValue=${filteredValue.toStringAsFixed(5)}, speed=${_speed.toStringAsFixed(5)}, distance=${_distance.toStringAsFixed(5)}');
 
-    if (_distance.abs() > thresholdValue) {
-      //print('$name: distance=${distance.toStringAsFixed(5)}');
+    final isDetected = _distance.abs() > thresholdValue;
+    onDetect(MotionInfo(sensorType: type, outputValue: _distance, isDetected: isDetected));
+    if (isDetected) {
       clear();
-      onDetect();
     }
   }
 
@@ -156,7 +154,7 @@ class AccelerometerAnalyser {
 class GyroscopeAnalyser {
   final SensorType type;
   final double thresholdValue;
-  final void Function() onDetect;
+  final void Function(MotionInfo) onDetect;
 
   GyroscopeAnalyser({required this.type, required this.thresholdValue, required this.onDetect});
 
@@ -190,12 +188,13 @@ class GyroscopeAnalyser {
     _angle += ((degrees + _prevValue) * timeSpan) / 2;
     _prevValue = degrees;
 
-    print(
-        '$type: radian=${value.toStringAsFixed(5)}, caliValue=${calibratedValue.toStringAsFixed(5)}, degrees=${degrees.toStringAsFixed(5)}, angle=${_angle.toStringAsFixed(5)}, ${value < 0 ? 'MINUS' : ''}');
+    // print(
+    //     '$type: radian=${value.toStringAsFixed(5)}, caliValue=${calibratedValue.toStringAsFixed(5)}, degrees=${degrees.toStringAsFixed(5)}, angle=${_angle.toStringAsFixed(5)}, ${value < 0 ? 'MINUS' : ''}');
 
-    if (_angle.abs() > thresholdValue) {
+    final isDetected = _angle.abs() > thresholdValue;
+    onDetect(MotionInfo(sensorType: type, outputValue: _angle, isDetected: isDetected));
+    if (isDetected) {
       clear();
-      onDetect();
 
       isIgnoring = true;
       Future.delayed(const Duration(seconds: 1), () {
@@ -231,7 +230,6 @@ class Calibrator {
       if (!_isCalibrated) {
         _offset = _median(_values);
         _isCalibrated = true;
-        print('@@@@ _offset=$_offset');
       }
       return value - _offset;
     }
