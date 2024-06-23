@@ -43,6 +43,12 @@ class _MyHomePageState extends State<MyHomePage> {
   String _gyroX = '';
   String _gyroY = '';
   String _gyroZ = '';
+  bool _isAccXDetected = false;
+  bool _isAccYDetected = false;
+  bool _isAccZDetected = false;
+  bool _isGyroXDetected = false;
+  bool _isGyroYDetected = false;
+  bool _isGyroZDetected = false;
 
   @override
   void initState() {
@@ -111,27 +117,27 @@ class _MyHomePageState extends State<MyHomePage> {
           Column(children: [
             Text(
               _accX,
-              style: textStyle,
+              style: textStyle.copyWith(color: _isAccXDetected ? Colors.red : Colors.white),
             ),
             Text(
               _accY,
-              style: textStyle,
+              style: textStyle.copyWith(color: _isAccYDetected ? Colors.red : Colors.white),
             ),
             Text(
               _accZ,
-              style: textStyle,
+              style: textStyle.copyWith(color: _isAccZDetected ? Colors.red : Colors.white),
             ),
             Text(
               _gyroX,
-              style: textStyle,
+              style: textStyle.copyWith(color: _isGyroXDetected ? Colors.red : Colors.white),
             ),
             Text(
               _gyroY,
-              style: textStyle,
+              style: textStyle.copyWith(color: _isGyroYDetected ? Colors.red : Colors.white),
             ),
             Text(
               _gyroZ,
-              style: textStyle,
+              style: textStyle.copyWith(color: _isGyroZDetected ? Colors.red : Colors.white),
             ),
           ]),
         ],
@@ -144,21 +150,27 @@ class _MyHomePageState extends State<MyHomePage> {
     switch (info.sensorType) {
       case SensorType.userAccelerometerX:
         _accX = value;
+        _isAccXDetected = info.isDetected;
         break;
       case SensorType.userAccelerometerY:
         _accY = value;
+        _isAccYDetected = info.isDetected;
         break;
       case SensorType.userAccelerometerZ:
         _accZ = value;
+        _isAccZDetected = info.isDetected;
         break;
       case SensorType.gyroscopeX:
         _gyroX = value;
+        _isGyroXDetected = info.isDetected;
         break;
       case SensorType.gyroscopeY:
         _gyroY = value;
+        _isGyroYDetected = info.isDetected;
         break;
       case SensorType.gyroscopeZ:
         _gyroZ = value;
+        _isGyroZDetected = info.isDetected;
         break;
     }
   }
