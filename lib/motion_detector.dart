@@ -32,30 +32,37 @@ class MotionInfo {
 }
 
 class MotionDetector {
+  Duration samplingPeriod;
+  double accelerometerThreshold;
+  double gyroscopeThreshold;
+
   final _streamSubscriptions = <StreamSubscription<dynamic>>[];
-  final Duration _sensorInterval = SensorInterval.uiInterval;
   late AccelerometerAnalyser _accelerometerXAnalyser;
   late GyroscopeAnalyser _gyroscopeZAnalyser;
 
   final _streamController = StreamController<MotionInfo>();
   Stream<MotionInfo> get stream => _streamController.stream;
 
-  MotionDetector() {
+  MotionDetector({
+    this.samplingPeriod = SensorInterval.uiInterval,
+    this.accelerometerThreshold = 0.2,
+    this.gyroscopeThreshold = 90,
+  }) {
     _accelerometerXAnalyser = AccelerometerAnalyser(
       type: SensorType.userAccelerometerX,
-      thresholdValue: 0.2,
+      thresholdValue: accelerometerThreshold,
       onDetect: (info) => _streamController.add(info),
     );
     _gyroscopeZAnalyser = GyroscopeAnalyser(
       type: SensorType.gyroscopeZ,
-      thresholdValue: 90,
+      thresholdValue: gyroscopeThreshold,
       onDetect: (info) => _streamController.add(info),
     );
   }
 
   void start() {
     _streamSubscriptions.addAll([
-      userAccelerometerEventStream(samplingPeriod: _sensorInterval).listen(
+      userAccelerometerEventStream(samplingPeriod: samplingPeriod).listen(
         (UserAccelerometerEvent event) {
           _accelerometerXAnalyser.analyse(value: event.x, time: DateTime.now());
         },
@@ -64,7 +71,7 @@ class MotionDetector {
         },
         cancelOnError: true,
       ),
-      gyroscopeEventStream(samplingPeriod: _sensorInterval).listen(
+      gyroscopeEventStream(samplingPeriod: samplingPeriod).listen(
         (GyroscopeEvent event) {
           _gyroscopeZAnalyser.analyse(value: event.z, time: DateTime.now());
         },
