@@ -38,6 +38,7 @@ class MotionDetector {
 
   final _streamSubscriptions = <StreamSubscription<dynamic>>[];
   late AccelerometerAnalyser _accelerometerXAnalyser;
+  late AccelerometerAnalyser _accelerometerYAnalyser;
   late GyroscopeAnalyser _gyroscopeZAnalyser;
 
   final _streamController = StreamController<MotionInfo>();
@@ -53,6 +54,11 @@ class MotionDetector {
       thresholdValue: accelerometerThreshold,
       onDetect: (info) => _streamController.add(info),
     );
+    _accelerometerYAnalyser = AccelerometerAnalyser(
+      type: SensorType.userAccelerometerY,
+      thresholdValue: accelerometerThreshold,
+      onDetect: (info) => _streamController.add(info),
+    );
     _gyroscopeZAnalyser = GyroscopeAnalyser(
       type: SensorType.gyroscopeZ,
       thresholdValue: gyroscopeThreshold,
@@ -65,6 +71,15 @@ class MotionDetector {
       userAccelerometerEventStream(samplingPeriod: samplingPeriod).listen(
         (UserAccelerometerEvent event) {
           _accelerometerXAnalyser.analyse(value: event.x, time: DateTime.now());
+        },
+        onError: (e) {
+          print(e);
+        },
+        cancelOnError: true,
+      ),
+      userAccelerometerEventStream(samplingPeriod: samplingPeriod).listen(
+        (UserAccelerometerEvent event) {
+          _accelerometerYAnalyser.analyse(value: event.y, time: DateTime.now());
         },
         onError: (e) {
           print(e);
@@ -100,6 +115,7 @@ class AccelerometerAnalyser {
   double _prevSpeed = 0;
   double _distance = 0;
   DateTime? _prevTime;
+  bool isIgnoring = false;
 
   /// キャリブレーター
   final _calibrator = Calibrator();
@@ -139,6 +155,11 @@ class AccelerometerAnalyser {
     onDetect(MotionInfo(sensorType: type, outputValue: _distance, isDetected: isDetected));
     if (isDetected) {
       clear();
+
+      isIgnoring = true;
+      Future.delayed(const Duration(milliseconds: 500), () {
+        isIgnoring = false;
+      });
     }
   }
 
