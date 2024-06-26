@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'motion_detector.dart';
+import 'motion_analyser.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -35,7 +35,7 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  final _motionDetector = MotionDetector();
+  final _motionAnalyser = MotionAnalyser();
   final _streamSubscriptions = <StreamSubscription<dynamic>>[];
   String _accX = '';
   String _accY = '';
@@ -53,10 +53,10 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
-    _motionDetector.start();
+    _motionAnalyser.start();
 
     _streamSubscriptions.add(
-      _motionDetector.stream.listen(
+      _motionAnalyser.stream.listen(
         (info) {
           setState(() => _setOutputValues(info));
         },
@@ -68,7 +68,7 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void dispose() {
     super.dispose();
-    _motionDetector.stop();
+    _motionAnalyser.stop();
     _streamSubscriptions.clear();
   }
 

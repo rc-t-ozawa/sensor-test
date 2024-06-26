@@ -31,7 +31,7 @@ class MotionInfo {
   MotionInfo({required this.sensorType, required this.outputValue, required this.isDetected});
 }
 
-class MotionDetector {
+class MotionAnalyser {
   Duration samplingPeriod;
   double accelerometerThreshold;
   double gyroscopeThreshold;
@@ -44,7 +44,7 @@ class MotionDetector {
   final _streamController = StreamController<MotionInfo>();
   Stream<MotionInfo> get stream => _streamController.stream;
 
-  MotionDetector({
+  MotionAnalyser({
     this.samplingPeriod = SensorInterval.uiInterval,
     this.accelerometerThreshold = 0.2,
     this.gyroscopeThreshold = 90,
@@ -79,7 +79,7 @@ class MotionDetector {
       ),
       userAccelerometerEventStream(samplingPeriod: samplingPeriod).listen(
         (UserAccelerometerEvent event) {
-          _accelerometerYAnalyser.analyse(value: event.y, time: DateTime.now());
+          //_accelerometerYAnalyser.analyse(value: event.y, time: DateTime.now());
         },
         onError: (e) {
           print(e);
@@ -88,7 +88,7 @@ class MotionDetector {
       ),
       gyroscopeEventStream(samplingPeriod: samplingPeriod).listen(
         (GyroscopeEvent event) {
-          _gyroscopeZAnalyser.analyse(value: event.z, time: DateTime.now());
+          //_gyroscopeZAnalyser.analyse(value: event.z, time: DateTime.now());
         },
         onError: (e) {
           print(e);
@@ -148,8 +148,9 @@ class AccelerometerAnalyser {
     _distance = ((_speed + _prevSpeed) * timeSpan) / 2 + _distance;
     _prevSpeed = _speed;
 
-    // print(
-    //     '$type: value=${value.toStringAsFixed(5)}, caliValue=${calibratedValue.toStringAsFixed(5)}, filValue=${filteredValue.toStringAsFixed(5)}, speed=${_speed.toStringAsFixed(5)}, distance=${_distance.toStringAsFixed(5)}');
+    print(
+      '$type: value=${value.toStringAsFixed(5)}, caliValue=${calibratedValue.toStringAsFixed(5)}, filValue=${filteredValue.toStringAsFixed(5)}, speed=${_speed.toStringAsFixed(5)}, distance=${_distance.toStringAsFixed(5)}',
+    );
 
     final isDetected = _distance.abs() > thresholdValue;
     onDetect(MotionInfo(sensorType: type, outputValue: _distance, isDetected: isDetected));
@@ -216,8 +217,9 @@ class GyroscopeAnalyser {
     _angle += ((degrees + _prevValue) * timeSpan) / 2;
     _prevValue = degrees;
 
-    print(
-        '$type: radian=${value.toStringAsFixed(5)}, caliValue=${calibratedValue.toStringAsFixed(5)}, degrees=${degrees.toStringAsFixed(5)}, angle=${_angle.toStringAsFixed(5)}, ${value < 0 ? 'MINUS' : ''}');
+    // print(
+    //   '$type: radian=${value.toStringAsFixed(5)}, caliValue=${calibratedValue.toStringAsFixed(5)}, degrees=${degrees.toStringAsFixed(5)}, angle=${_angle.toStringAsFixed(5)}',
+    // );
 
     final isDetected = _angle.abs() > thresholdValue;
     onDetect(MotionInfo(sensorType: type, outputValue: _angle, isDetected: isDetected));
