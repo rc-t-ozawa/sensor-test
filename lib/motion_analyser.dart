@@ -134,11 +134,8 @@ class AccelerometerAnalyser {
     // キャリブレーション
     final calibratedValue = _calibrator.calibrate(value);
 
-    //final roundedValue = round(calibratedValue, _calibrator.offset);
-
-    // ハイパスフィルター (= センサ値 - ローパスフィルターの値)
-    //final filteredValue = roundedValue - _lowPassFilter.filter(roundedValue);
-    final filteredValue = calibratedValue - _lowPassFilter.filter(calibratedValue);
+    // ローパスフィルターの値
+    final filteredValue = _lowPassFilter.filter(calibratedValue);
 
     // 速度計算(加速度を台形積分する)
     _speed = ((filteredValue + _prevValue) * timeSpan) / 2 + _speed;
@@ -161,14 +158,6 @@ class AccelerometerAnalyser {
       Future.delayed(const Duration(milliseconds: 500), () {
         isIgnoring = false;
       });
-    }
-  }
-
-  double round(double value, double offset) {
-    if (value.abs() < offset.abs() * 2) {
-      return 0;
-    } else {
-      return value;
     }
   }
 
