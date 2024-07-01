@@ -53,8 +53,6 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
-    _motionAnalyser.start();
-
     _streamSubscriptions.add(
       _motionAnalyser.stream.listen(
         (info) {
@@ -68,13 +66,16 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void dispose() {
     super.dispose();
-    _motionAnalyser.stop();
     _streamSubscriptions.clear();
   }
 
   @override
   Widget build(BuildContext context) {
-    const textStyle = TextStyle(color: Colors.white, fontSize: 24);
+    const textStyle = TextStyle(
+      color: Colors.white,
+      fontSize: 26,
+      fontWeight: FontWeight.bold,
+    );
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -86,61 +87,80 @@ class _MyHomePageState extends State<MyHomePage> {
         elevation: 4,
       ),
       body: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          const Column(children: [
-            Text(
-              'Acc X',
-              style: textStyle,
-            ),
-            Text(
-              'Acc Y',
-              style: textStyle,
-            ),
-            Text(
-              'Acc Z',
-              style: textStyle,
-            ),
-            Text(
-              'gyro X',
-              style: textStyle,
-            ),
-            Text(
-              'gyro Y',
-              style: textStyle,
-            ),
-            Text(
-              'gyro Z',
-              style: textStyle,
-            ),
-          ]),
-          Column(children: [
-            Text(
-              _accX,
-              style: textStyle.copyWith(color: _isAccXDetected ? Colors.red : Colors.white),
-            ),
-            Text(
-              _accY,
-              style: textStyle.copyWith(color: _isAccYDetected ? Colors.red : Colors.white),
-            ),
-            Text(
-              _accZ,
-              style: textStyle.copyWith(color: _isAccZDetected ? Colors.red : Colors.white),
-            ),
-            Text(
-              _gyroX,
-              style: textStyle.copyWith(color: _isGyroXDetected ? Colors.red : Colors.white),
-            ),
-            Text(
-              _gyroY,
-              style: textStyle.copyWith(color: _isGyroYDetected ? Colors.red : Colors.white),
-            ),
-            Text(
-              _gyroZ,
-              style: textStyle.copyWith(color: _isGyroZDetected ? Colors.red : Colors.white),
-            ),
-          ]),
+          const Expanded(
+            child: Column(children: [
+              Text(
+                'Acc X',
+                style: textStyle,
+              ),
+              Text(
+                'Acc Y',
+                style: textStyle,
+              ),
+              Text(
+                'Acc Z',
+                style: textStyle,
+              ),
+              Text(
+                'gyro X',
+                style: textStyle,
+              ),
+              Text(
+                'gyro Y',
+                style: textStyle,
+              ),
+              Text(
+                'gyro Z',
+                style: textStyle,
+              ),
+            ]),
+          ),
+          Expanded(
+            child: Column(children: [
+              Text(
+                _accX,
+                style: textStyle.copyWith(color: _isAccXDetected ? Colors.red : Colors.white),
+              ),
+              Text(
+                _accY,
+                style: textStyle.copyWith(color: _isAccYDetected ? Colors.red : Colors.white),
+              ),
+              Text(
+                _accZ,
+                style: textStyle.copyWith(color: _isAccZDetected ? Colors.red : Colors.white),
+              ),
+              Text(
+                _gyroX,
+                style: textStyle.copyWith(color: _isGyroXDetected ? Colors.red : Colors.white),
+              ),
+              Text(
+                _gyroY,
+                style: textStyle.copyWith(color: _isGyroYDetected ? Colors.red : Colors.white),
+              ),
+              Text(
+                _gyroZ,
+                style: textStyle.copyWith(color: _isGyroZDetected ? Colors.red : Colors.white),
+              ),
+            ]),
+          ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          if (_motionAnalyser.isStarting) {
+            _motionAnalyser.stop();
+          } else {
+            _resetOutputValues();
+            _motionAnalyser.start();
+          }
+          setState(() {});
+        },
+        backgroundColor: _motionAnalyser.isStarting ? Colors.red : Colors.green,
+        child: Icon(
+          _motionAnalyser.isStarting ? Icons.stop : Icons.play_arrow,
+          color: Colors.white,
+        ),
       ),
     );
   }
@@ -173,5 +193,14 @@ class _MyHomePageState extends State<MyHomePage> {
         _isGyroZDetected = info.isDetected;
         break;
     }
+  }
+
+  void _resetOutputValues() {
+    _accX = '';
+    _accY = '';
+    _accZ = '';
+    _gyroX = '';
+    _gyroY = '';
+    _gyroZ = '';
   }
 }

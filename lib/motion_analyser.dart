@@ -67,6 +67,10 @@ class MotionAnalyser {
   }
 
   void start() {
+    _accelerometerXAnalyser.clear();
+    _accelerometerYAnalyser.clear();
+    _gyroscopeZAnalyser.clear();
+
     _streamSubscriptions.addAll([
       userAccelerometerEventStream(samplingPeriod: samplingPeriod).listen(
         (UserAccelerometerEvent event) {
@@ -99,8 +103,13 @@ class MotionAnalyser {
   }
 
   void stop() {
+    for (var subscription in _streamSubscriptions) {
+      subscription.cancel();
+    }
     _streamSubscriptions.clear();
   }
+
+  bool get isStarting => _streamSubscriptions.isNotEmpty;
 }
 
 class AccelerometerAnalyser {
